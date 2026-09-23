@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: kuchipudi-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - kuchipudi-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kuchipudi-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - DATABASE_NAME=kuchipudi_db
+      - CONFIDENCE_THRESHOLD=0.60
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend/models:/app/models
+      - ./backend/data:/app/data
+    networks:
+      - kuchipudi-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kuchipudi-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - kuchipudi-net
+
+volumes:
+  mongo-data:
+
+networks:
+  kuchipudi-net:
+    driver: bridge
